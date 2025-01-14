@@ -7,8 +7,15 @@
 Overview
 ********
 
+**THIS REQUIRES AN NRF54L15DK, OR ADJUSTMENTS TO THE BIT DEFINES IN main.c**
 This sample can be used for basic power measurement and as an example of
-deep sleep on Nordic platforms.
+deep sleep on Nordic platforms and utilize the latch register to determine wakeup source.
+
+It is overly verbose for educational purposes.
+
+You can press switch 0-3 to see an LED blink the set number times and then go to sleep.
+
+
 
 RAM Retention
 =============
