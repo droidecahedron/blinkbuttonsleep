@@ -11,6 +11,7 @@ Overview
 
 This sample can be used for basic power measurement and as an example of
 deep sleep on Nordic platforms and utilize the latch register to determine wakeup source.
+https://docs.nordicsemi.com/bundle/ps_nrf54L15/page/gpio.html#ariaid-title15
 
 It is overly verbose for educational purposes.
 
