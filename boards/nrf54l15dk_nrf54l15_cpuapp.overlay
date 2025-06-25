@@ -22,7 +22,10 @@
 	ranges = <0x0 0x20000000 0x2e000>;
 };
 
-// button 0 is p0.04
-&gpio0 {
-    sense-edge-mask = <0x00000010>; /* Bit 4 set for pin 4 (Button 3) */
+// sw0 p1.13 
+// sw1 p1.09
+// sw2 p1.08
+// sw3 p0.04 /* Bit 4 set for pin 4 (Button 3) */
+&gpio1 {
+    sense-edge-mask = <0x00000200>; /* 1<<9 */
 };

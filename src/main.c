@@ -25,27 +25,48 @@
 #include <zephyr/drivers/timer/nrf_grtc_timer.h>
 #define DEEP_SLEEP_TIME_S 2
 #else
-
-#define BUTTON_NODE DT_ALIAS(sw3)
-static const struct gpio_dt_spec sleepbutton3 = GPIO_DT_SPEC_GET_OR(BUTTON_NODE, gpios, {0});
+#define WAKE_BUTTON_NODE DT_ALIAS(sw1)
+#define SLEEP_BUTTON_NODE DT_ALIAS(sw0)
+static const struct gpio_dt_spec sleepbutton0 = GPIO_DT_SPEC_GET_OR(SLEEP_BUTTON_NODE, gpios, {0});
+static const struct gpio_dt_spec wakebutton1 = GPIO_DT_SPEC_GET_OR(WAKE_BUTTON_NODE, gpios, {0});
 static struct gpio_callback button_cb_data;
-
-#endif
 
 #define dk_sw0_msk 1 << 13
 #define dk_sw1_msk 1 << 9
 #define dk_sw2_msk 1 << 8
 #define dk_sw3_msk 1 << 4
 
-static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
+#endif
 
+static const struct gpio_dt_spec led0 = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpios);
 const struct device *const cons = DEVICE_DT_GET(DT_CHOSEN(zephyr_console));
+
+#define WORQ_THREAD_STACK_SIZE 512
+#define WQ_PRIO 4
+
+// Define stack area used by workqueue thread
+static K_THREAD_STACK_DEFINE(wq_stack_area, WORQ_THREAD_STACK_SIZE);
+// Define queue structure
+static struct k_work_q sleep_work_q = {0};
+struct work_info
+{
+    struct k_work work;
+    uint8_t data[8];
+} my_work;
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    printf("GOIN TO BED\n");
+    k_work_submit_to_queue(&sleep_work_q, &my_work.work);
+}
+
+void poweroff_work_handler(struct k_work *work_item)
+{
+    printf("configuring sw1 as wakebutton then going to bed\n");
     // Configure pin sense for wakeup
-    nrf_gpio_cfg_sense_set(sleepbutton3.pin, NRF_GPIO_PIN_SENSE_LOW);
+    gpio_pin_configure_dt(&wakebutton1, GPIO_INPUT | GPIO_PULL_UP);
+    gpio_add_callback(wakebutton1.port, &button_cb_data);
+    gpio_pin_interrupt_configure_dt(&wakebutton1, GPIO_INT_EDGE_TO_ACTIVE);
+    nrf_gpio_cfg_sense_set(wakebutton1.pin, NRF_GPIO_PIN_SENSE_LOW);
 
     int rc = pm_device_action_run(cons, PM_DEVICE_ACTION_SUSPEND);
     if (rc < 0)
@@ -59,10 +80,10 @@ void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t
 
 static void sleep_button_init(void)
 {
-    gpio_pin_configure_dt(&sleepbutton3, GPIO_INPUT | GPIO_PULL_UP);
-    gpio_init_callback(&button_cb_data, button_pressed, BIT(sleepbutton3.pin));
-    gpio_add_callback(sleepbutton3.port, &button_cb_data);
-    gpio_pin_interrupt_configure_dt(&sleepbutton3, GPIO_INT_EDGE_TO_ACTIVE);
+    gpio_pin_configure_dt(&sleepbutton0, GPIO_INPUT | GPIO_PULL_UP);
+    gpio_init_callback(&button_cb_data, button_pressed, BIT(sleepbutton0.pin) | BIT(wakebutton1.pin));
+    gpio_add_callback(sleepbutton0.port, &button_cb_data);
+    gpio_pin_interrupt_configure_dt(&sleepbutton0, GPIO_INT_EDGE_TO_ACTIVE);
 }
 
 static void blink(uint8_t num_blinks)
@@ -90,33 +111,12 @@ static void wakeup_io_src_get()
     {
         switch (p1_latch)
         {
-        case dk_sw0_msk:
-            printk("WAKEUP SRC: SW0\n");
-            blink(1);
-            break;
         case dk_sw1_msk:
             printk("WAKEUP SRC: SW1\n");
             blink(2);
             break;
-        case dk_sw2_msk:
-            printk("WAKEUP SRC: SW2\n");
-            blink(3);
-            break;
         default:
-            printk("WAKEUP SRC: ???\n");
-            break;
-        }
-    }
-    else if (p0_latch > 0) // check if p0 was the source
-    {
-        switch (p0_latch)
-        {
-        case dk_sw3_msk:
-            printk("WAKEUP SRC: SW3\n");
-            blink(4);
-            break;
-        default:
-            printk("WAKEUP SRC: ???\n");
+            printk("WAKEUP SRC: UNDEF\n");
             break;
         }
     }
@@ -174,7 +174,11 @@ int main(void)
     /* configure sw3 as input, interrupt as level active to allow wake-up */
     sleep_button_init();
 
-    printf("Entering system off; press any switch to restart\n");
+    k_work_init(&my_work.work, poweroff_work_handler);
+    strcpy(my_work.data, "sleep");
+    k_work_queue_start(&sleep_work_q, wq_stack_area, K_THREAD_STACK_SIZEOF(wq_stack_area), WQ_PRIO, NULL);
+
+    printf("Entering system off; button0 sleeps, button1 to wake up\n");
 #endif
 
     if (IS_ENABLED(CONFIG_APP_USE_RETAINED_MEM))

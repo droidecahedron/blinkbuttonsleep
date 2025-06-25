@@ -4,6 +4,9 @@
 
    Use deep sleep on Nordic platforms.
 
+** SPECIAL BRANCH: SW0 SLEEPS, SW1 WAKES **
+west build --pristine always --board nrf54l15dk/nrf54l15/cpuapp -- -DEXTRA_DTC_OVERLAY_FILE='boards/nrf54l15dk_nrf54l15_cpuapp.overlay'
+
 Overview
 ********
 
