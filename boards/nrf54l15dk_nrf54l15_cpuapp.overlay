@@ -21,3 +21,8 @@
 	reg = <0x20000000 DT_SIZE_K(184)>;
 	ranges = <0x0 0x20000000 0x2e000>;
 };
+
+// button 0 is p0.04
+&gpio0 {
+    sense-edge-mask = <0x00000010>; /* Bit 4 set for pin 4 (Button 3) */
+};
