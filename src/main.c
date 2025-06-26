@@ -65,20 +65,14 @@ void poweroff_work_handler(struct k_work *work_item)
     printf("configuring sw1 as wakebutton then going to bed\n");
     // Configure pin sense for wakeup
     gpio_flags_t flags = wakebutton1.dt_flags & GPIO_ACTIVE_LOW ? GPIO_PULL_UP : GPIO_PULL_DOWN;
+    
     gpio_pin_configure_dt(&wakebutton1, GPIO_INPUT | flags);
     gpio_add_callback(wakebutton1.port, &button_cb_data);
-    gpio_pin_interrupt_configure_dt(&wakebutton1, GPIO_INT_EDGE_TO_ACTIVE);
     nrf_gpio_cfg_sense_set(wakebutton1.pin, NRF_GPIO_PIN_SENSE_LOW);
 
     gpio_pin_configure_dt(&sleepbutton0, GPIO_DISCONNECTED);
     gpio_pin_interrupt_configure_dt(&sleepbutton0, GPIO_INT_DISABLE);
-
-    /*
-    //STUPID: DISABLE YOUR WAKE BUTTON INTERRUPT AND k_msleep POWER CONSUMPTION DROPS TO 4uA.
-    gpio_pin_configure_dt(&wakebutton1, GPIO_DISCONNECTED);
-    gpio_pin_interrupt_configure_dt(&wakebutton1, GPIO_INT_DISABLE);
-    */
-
+    
     k_msleep(500);
     printk("suspending console");
     int rc = pm_device_action_run(cons, PM_DEVICE_ACTION_SUSPEND);
