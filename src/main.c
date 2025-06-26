@@ -50,13 +50,13 @@ static K_THREAD_STACK_DEFINE(wq_stack_area, WORQ_THREAD_STACK_SIZE);
 static struct k_work_q sleep_work_q = {0};
 struct work_info
 {
-    struct k_work work;
+    struct k_work_delayable work;
     uint8_t data[8];
 } my_work;
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    k_work_submit_to_queue(&sleep_work_q, &my_work.work);
+    k_work_schedule_for_queue(&sleep_work_q, &my_work.work, K_MSEC(200));
 }
 
 void poweroff_work_handler(struct k_work *work_item)
@@ -69,6 +69,7 @@ void poweroff_work_handler(struct k_work *work_item)
     nrf_gpio_cfg_sense_set(wakebutton1.pin, NRF_GPIO_PIN_SENSE_LOW);
 
     gpio_pin_configure_dt(&sleepbutton0, GPIO_DISCONNECTED);
+    gpio_pin_interrupt_configure_dt(&sleepbutton0, GPIO_INT_DISABLE);
 
     int rc = pm_device_action_run(cons, PM_DEVICE_ACTION_SUSPEND);
     if (rc < 0)
@@ -176,9 +177,12 @@ int main(void)
     /* configure sw3 as input, interrupt as level active to allow wake-up */
     sleep_button_init();
 
-    k_work_init(&my_work.work, poweroff_work_handler);
+    k_work_init_delayable(&my_work.work, poweroff_work_handler);
+    struct k_work_queue_config kwcfg;
+    kwcfg.essential = false;
+    kwcfg.no_yield = false;
     strcpy(my_work.data, "sleep");
-    k_work_queue_start(&sleep_work_q, wq_stack_area, K_THREAD_STACK_SIZEOF(wq_stack_area), WQ_PRIO, NULL);
+    k_work_queue_start(&sleep_work_q, wq_stack_area, K_THREAD_STACK_SIZEOF(wq_stack_area), WQ_PRIO, &kwcfg);
 
     printf("Entering system off; button0 sleeps, button1 to wake up\n");
 #endif
