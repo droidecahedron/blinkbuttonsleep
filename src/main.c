@@ -51,25 +51,33 @@ static K_THREAD_STACK_DEFINE(wq_stack_area, WORQ_THREAD_STACK_SIZE);
 static struct k_work_q sleep_work_q = {0};
 struct work_info
 {
-    struct k_work work;
+    struct k_work_delayable work;
     uint8_t data[8];
 } my_work;
 
 void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
 {
-    k_work_submit_to_queue(&sleep_work_q, &my_work.work);
+    k_work_schedule_for_queue(&sleep_work_q, &my_work.work, K_MSEC(500));
 }
 
 void poweroff_work_handler(struct k_work *work_item)
 {
     printf("configuring sw1 as wakebutton then going to bed\n");
     // Configure pin sense for wakeup
-    gpio_pin_configure_dt(&wakebutton1, GPIO_INPUT | GPIO_PULL_UP);
+    gpio_flags_t flags = wakebutton1.dt_flags & GPIO_ACTIVE_LOW ? GPIO_PULL_UP : GPIO_PULL_DOWN;
+    gpio_pin_configure_dt(&wakebutton1, GPIO_INPUT | flags);
     gpio_add_callback(wakebutton1.port, &button_cb_data);
     gpio_pin_interrupt_configure_dt(&wakebutton1, GPIO_INT_EDGE_TO_ACTIVE);
     nrf_gpio_cfg_sense_set(wakebutton1.pin, NRF_GPIO_PIN_SENSE_LOW);
 
     gpio_pin_configure_dt(&sleepbutton0, GPIO_DISCONNECTED);
+    gpio_pin_interrupt_configure_dt(&sleepbutton0, GPIO_INT_DISABLE);
+
+    /*
+    //STUPID: DISABLE YOUR WAKE BUTTON INTERRUPT AND k_msleep POWER CONSUMPTION DROPS TO 4uA.
+    gpio_pin_configure_dt(&wakebutton1, GPIO_DISCONNECTED);
+    gpio_pin_interrupt_configure_dt(&wakebutton1, GPIO_INT_DISABLE);
+    */
 
     k_msleep(500);
     printk("suspending console");
@@ -88,7 +96,8 @@ void poweroff_work_handler(struct k_work *work_item)
 
 static void sleep_button_init(void)
 {
-    gpio_pin_configure_dt(&sleepbutton0, GPIO_INPUT | GPIO_PULL_UP);
+    gpio_flags_t flags = sleepbutton0.dt_flags & GPIO_ACTIVE_LOW ? GPIO_PULL_UP : GPIO_PULL_DOWN;
+    gpio_pin_configure_dt(&sleepbutton0, GPIO_INPUT | flags);
     gpio_init_callback(&button_cb_data, button_pressed, BIT(sleepbutton0.pin) | BIT(wakebutton1.pin));
     gpio_add_callback(sleepbutton0.port, &button_cb_data);
     gpio_pin_interrupt_configure_dt(&sleepbutton0, GPIO_INT_EDGE_TO_ACTIVE);
@@ -179,7 +188,7 @@ int main(void)
     /* configure sw3 as input, interrupt as level active to allow wake-up */
     sleep_button_init();
 
-    k_work_init(&my_work.work, poweroff_work_handler);
+    k_work_init_delayable(&my_work.work, poweroff_work_handler);
     strcpy(my_work.data, "sleep");
     k_work_queue_start(&sleep_work_q, wq_stack_area, K_THREAD_STACK_SIZEOF(wq_stack_area), WQ_PRIO, NULL);
 
