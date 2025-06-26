@@ -69,11 +69,18 @@ void poweroff_work_handler(struct k_work *work_item)
     gpio_pin_interrupt_configure_dt(&wakebutton1, GPIO_INT_EDGE_TO_ACTIVE);
     nrf_gpio_cfg_sense_set(wakebutton1.pin, NRF_GPIO_PIN_SENSE_LOW);
 
+    gpio_pin_configure_dt(&sleepbutton0, GPIO_DISCONNECTED);
+
+    k_msleep(500);
+    printk("suspending console");
     int rc = pm_device_action_run(cons, PM_DEVICE_ACTION_SUSPEND);
     if (rc < 0)
     {
         printf("Could not suspend console (%d)\n", rc);
     }
+
+    //wait another 500ms after that before power off
+    k_msleep(500);
 
     // Enter system off (deep sleep)
     sys_poweroff();
