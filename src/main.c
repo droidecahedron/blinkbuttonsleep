@@ -31,10 +31,11 @@ static const struct gpio_dt_spec sleepbutton0 = GPIO_DT_SPEC_GET_OR(SLEEP_BUTTON
 static const struct gpio_dt_spec wakebutton1 = GPIO_DT_SPEC_GET_OR(WAKE_BUTTON_NODE, gpios, {0});
 static struct gpio_callback button_cb_data;
 
-#define dk_sw0_msk 1 << 13
-#define dk_sw1_msk 1 << 9
-#define dk_sw2_msk 1 << 8
-#define dk_sw3_msk 1 << 4
+//5340 button bits
+#define dk_sw1_msk 1 << 23
+#define dk_sw2_msk 1 << 24
+#define dk_sw3_msk 1 << 8
+#define dk_sw4_msk 1 << 9
 
 #endif
 
@@ -99,20 +100,18 @@ static void blink(uint8_t num_blinks)
 
 static void wakeup_io_src_get()
 {
-    // check and reset latch registers, specific to 54l15
+    // check and reset latch registers. on 5340 all buttons are on p0.
     // since these buttons are across ports, need to logic around both port latch registers
     volatile uint32_t p0_latch = NRF_P0_S->LATCH;
-    volatile uint32_t p1_latch = NRF_P1_S->LATCH;
     printf("LATCH REGISTER FOR P0: %d\n", p0_latch);
-    printf("LATCH REGISTER FOR P1: %d\n", p1_latch);
 
     // Your logic here will change depending on your device and ports.
-    if (p1_latch > 0) // check if p1 was the source
+    if (p0_latch > 0) // check if p0 was the source
     {
-        switch (p1_latch)
+        switch (p0_latch)
         {
-        case dk_sw1_msk:
-            printk("WAKEUP SRC: SW1\n");
+        case dk_sw2_msk:
+            printk("WAKEUP SRC: SW2\n");
             blink(2);
             break;
         default:
@@ -125,9 +124,8 @@ static void wakeup_io_src_get()
         // unknown wakeup source
     }
 
-    // clear latch
+    // clear latch (write 1 to clear)
     NRF_P0_S->LATCH = NRF_P0_S->LATCH;
-    NRF_P1_S->LATCH = NRF_P1_S->LATCH;
 }
 
 int main(void)
@@ -178,7 +176,7 @@ int main(void)
     strcpy(my_work.data, "sleep");
     k_work_queue_start(&sleep_work_q, wq_stack_area, K_THREAD_STACK_SIZEOF(wq_stack_area), WQ_PRIO, NULL);
 
-    printf("Entering system off; button0 sleeps, button1 to wake up\n");
+    printf("Entering system off; button1 sleeps, button2 to wake up\n");
 #endif
 
     if (IS_ENABLED(CONFIG_APP_USE_RETAINED_MEM))
