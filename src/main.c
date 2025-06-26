@@ -65,7 +65,6 @@ void poweroff_work_handler(struct k_work *work_item)
     // Configure pin sense for wakeup
     gpio_pin_configure_dt(&wakebutton1, GPIO_INPUT | GPIO_PULL_UP);
     gpio_add_callback(wakebutton1.port, &button_cb_data);
-    gpio_pin_interrupt_configure_dt(&wakebutton1, GPIO_INT_EDGE_TO_ACTIVE);
     nrf_gpio_cfg_sense_set(wakebutton1.pin, NRF_GPIO_PIN_SENSE_LOW);
 
     gpio_pin_configure_dt(&sleepbutton0, GPIO_DISCONNECTED);
