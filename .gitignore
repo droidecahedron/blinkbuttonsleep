@@ -1,6 +1,10 @@
 # editors
 *.swp
 *~
+.vscode/*
 
 # build
 /build*/
+
+# artifacts
+*.patch

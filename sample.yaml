@@ -1,92 +1,91 @@
 sample:
-  name: Low Power State Sample for nRF5x
-common:
-  tags: power
+  description: Bluetooth Low Energy UART service sample with Power optimization
+  name: Bluetooth LE UART service
 tests:
-  sample.boards.nrf.system_off:
-    integration_platforms:
-      - nrf52840dk/nrf52840
+  sample.bluetooth.peripheral_uart:
+    sysbuild: true
+    build_only: true
     platform_allow:
-      - nrf51dk/nrf51822
-      - nrf52840dk/nrf52840
       - nrf52dk/nrf52832
+      - nrf52833dk/nrf52833
+      - nrf52840dk/nrf52840
       - nrf5340dk/nrf5340/cpuapp
-      - nrf54l15dk/nrf54l05/cpuapp
-      - nrf54l15dk/nrf54l10/cpuapp
-      - nrf54l15dk/nrf54l15/cpuapp
-    harness: console
-    harness_config:
-      type: multi_line
-      ordered: true
-      regex:
-        - "system off demo"
-        - "Retained data not supported"
-        - "Entering system off; press sw0 to restart"
-  sample.boards.nrf.system_off.retained_mem:
+      - nrf5340dk/nrf5340/cpuapp/ns
+      - thingy53/nrf5340/cpuapp
+      - thingy53/nrf5340/cpuapp/ns
+      - nrf21540dk/nrf52840
+    integration_platforms:
+      - nrf52dk/nrf52832
+      - nrf52833dk/nrf52833
+      - nrf52840dk/nrf52840
+      - nrf5340dk/nrf5340/cpuapp
+      - nrf5340dk/nrf5340/cpuapp/ns
+      - thingy53/nrf5340/cpuapp
+      - thingy53/nrf5340/cpuapp/ns
+      - nrf21540dk/nrf52840
+    tags:
+      - bluetooth
+      - ci_build
+      - sysbuild
+  sample.bluetooth.peripheral_uart_cdc:
+    sysbuild: true
+    build_only: true
+    extra_args:
+      - OVERLAY_CONFIG=prj_cdc.conf
+      - DTC_OVERLAY_FILE="usb.overlay"
     integration_platforms:
       - nrf52840dk/nrf52840
+      - nrf52833dk/nrf52833
     platform_allow:
       - nrf52840dk/nrf52840
+      - nrf52833dk/nrf52833
+    tags:
+      - bluetooth
+      - ci_build
+      - sysbuild
+  sample.bluetooth.peripheral_uart_minimal:
+    sysbuild: true
+    build_only: true
+    extra_args: FILE_SUFFIX=minimal
+    integration_platforms:
+      - nrf52833dk/nrf52820
+    platform_allow:
+      - nrf52833dk/nrf52820
+    tags:
+      - bluetooth
+      - ci_build
+      - sysbuild
+  sample.bluetooth.peripheral_uart_ble_rpc:
+    sysbuild: true
+    build_only: true
+    extra_args:
+      - SNIPPET=nordic-bt-rpc
+      - FILE_SUFFIX=bt_rpc
+    integration_platforms:
+      - nrf5340dk/nrf5340/cpuapp
+    platform_allow:
+      - nrf5340dk/nrf5340/cpuapp
+    tags:
+      - bluetooth
+      - ci_build
+      - sysbuild
+  sample.bluetooth.peripheral_uart.security_disabled:
+    sysbuild: true
+    build_only: true
+    platform_allow:
       - nrf52dk/nrf52832
-      - nrf54l15dk/nrf54l15/cpuapp
-      - nrf54l15dk/nrf54l10/cpuapp
-      - nrf54l15dk/nrf54l05/cpuapp
+      - nrf52833dk/nrf52833
+      - nrf52840dk/nrf52840
+      - nrf5340dk/nrf5340/cpuapp
+      - nrf5340dk/nrf5340/cpuapp/ns
+      - thingy53/nrf5340/cpuapp
+      - thingy53/nrf5340/cpuapp/ns
+      - nrf21540dk/nrf52840
+    integration_platforms:
+      - nrf52840dk/nrf52840
+    tags:
+      - bluetooth
+      - ci_build
+      - sysbuild
     extra_configs:
-      - CONFIG_APP_USE_RETAINED_MEM=y
-    harness: console
-    harness_config:
-      type: multi_line
-      ordered: true
-      regex:
-        - "system off demo"
-        - "Retained data: INVALID"
-        - "Boot count: 1"
-        - "Off count: 0"
-        - "Active Ticks:"
-        - "Entering system off; press sw0 to restart"
-  sample.boards.nrf.system_off.grtc_wakeup:
-    platform_allow:
-      - nrf54l15dk/nrf54l15/cpuapp
-      - nrf54l15dk/nrf54l10/cpuapp
-      - nrf54l15dk/nrf54l05/cpuapp
-    extra_configs:
-      - CONFIG_GRTC_WAKEUP_ENABLE=y
-    harness: console
-    harness_config:
-      type: multi_line
-      ordered: true
-      regex:
-        - "system off demo"
-        - "Retained data not supported"
-        - "Entering system off; wait 2 seconds to restart"
-        - "system off demo"
-        - "Retained data not supported"
-        - "Entering system off; wait 2 seconds to restart"
-        - "system off demo"
-        - "Retained data not supported"
-        - "Entering system off; wait 2 seconds to restart"
-  sample.boards.nrf.system_off.retained_mem.grtc_wakeup:
-    platform_allow:
-      - nrf54l15dk/nrf54l15/cpuapp
-      - nrf54l15dk/nrf54l10/cpuapp
-      - nrf54l15dk/nrf54l05/cpuapp
-    extra_configs:
-      - CONFIG_APP_USE_RETAINED_MEM=y
-      - CONFIG_GRTC_WAKEUP_ENABLE=y
-    harness: console
-    harness_config:
-      type: multi_line
-      ordered: true
-      regex:
-        - "system off demo"
-        - "Retained data: INVALID"
-        - "Boot count: 1"
-        - "Off count: 0"
-        - "Active Ticks:"
-        - "Entering system off; wait 2 seconds to restart"
-        - "system off demo"
-        - "Retained data: valid"
-        - "Boot count: 2"
-        - "Off count: 1"
-        - "Active Ticks:"
-        - "Entering system off; wait 2 seconds to restart"
+      - CONFIG_BT_NUS_SECURITY_ENABLED=n

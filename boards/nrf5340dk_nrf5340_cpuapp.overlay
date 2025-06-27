@@ -1,7 +1,31 @@
+/ {
+	chosen {
+		nordic,nus-uart = &uart0;
+	};
+
+		buttons {
+		compatible = "gpio-keys";
+
+		button1: button_1 {
+			gpios = <&gpio0 24 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "Push button 2";
+			//wakeup-source;
+			zephyr,code = <INPUT_KEY_1>;
+		};
+
+	};
+
+	/* These aliases are provided for compatibility with samples */
+	aliases {
+		sw1 = &button1;
+	};
+
+};
+
 // sw0 p0.23
 // sw1 p0.24
 // sw2 p0.08
 // sw3 p0.09
-&gpio1 {
-    sense-edge-mask = <0x01000000>; /* 1<<24 | 1 <<23 */
+&gpio0 {
+    sense-edge-mask = <0x01800000>; /* 1<<24 | 1 <<23 */
 };
